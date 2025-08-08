@@ -1,0 +1,11 @@
+project\chandrashekar\RubiksCubeSolver\CubieCube.class
+project\chandrashekar\RubiksCubeSolver\Facelet.class
+project\chandrashekar\RubiksCubeSolver\CoordCube.class
+project\chandrashekar\RubiksCubeSolver\TwoPhaseApplication.class
+project\chandrashekar\RubiksCubeSolver\Edge.class
+project\chandrashekar\RubiksCubeSolver\Tools.class
+project\chandrashekar\RubiksCubeSolver\Corner.class
+project\chandrashekar\RubiksCubeSolver\Color.class
+project\chandrashekar\RubiksCubeSolver\Search.class
+project\chandrashekar\RubiksCubeSolver\FaceCube.class
+project\chandrashekar\RubiksCubeSolver\CubeController.class

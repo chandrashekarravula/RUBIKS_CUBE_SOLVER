@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Rubik's Cube Solver</title>
+    <style>
+	body {
+            font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #EDEAE0;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            max-width: 900px;
+            width: 100%;
+            background-color: smoke-white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .cube-container {
+            perspective: 1000px;
+            color: #F5F5F5;
+            margin: 30px 0;
+        }
+
+        .cube {
+            width: 200px;
+            height: 200px;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(-20deg) rotateY(-30deg);
+            transition: transform 0.5s ease;
+        }
+
+        .face {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border: 3px solid #2c3e50;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 2px;
+            padding: 5px;
+            box-sizing: border-box;
+            background-color:black;
+            border: 2px solid black;
+        }
+
+        .sticker {
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .sticker:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .front { transform: translateZ(100px); }
+        .back { transform: rotateY(180deg) translateZ(100px); }
+        .right { transform: rotateY(90deg) translateZ(100px); }
+        .left { transform: rotateY(-90deg) translateZ(100px); }
+        .top { transform: rotateX(90deg) translateZ(100px); }
+        .bottom { transform: rotateX(-90deg) translateZ(100px); }
+
+        .color-palette {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .color-option {
+            width: 50px;
+            height: 50px;
+            border: 3px solid #2c3e50;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        .selected-color {
+            border: 3px solid #fff;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            transform: scale(1.1);
+        }
+
+        .U { background-color: #FFFFFF; } /* White */
+        .R { background-color: #B71C1C; } /* Red */
+        .F { background-color: #1B5E20; } /* Green */
+        .D { background-color: #FFD600; } /* Yellow */
+        .L { background-color: #E65100; } /* Orange */
+        .B { background-color: #0D47A1; } /* Blue */
+
+        .buttons {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .cube-controls button {
+            font-size: 24px;
+            padding: 10px 10px;
+            margin: 10px;
+            border-radius: 8px;
+            border: none;
+            background-color: #444;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+                
+        .cube-controls button:hover {
+            background-color: #666;
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            transition: all 0.3s;
+            font-weight: bold;
+            min-width: 120px;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        #scramble-btn {
+            background-color: #9b59b6;
+        }
+
+        #scramble-btn:hover {
+            background-color: #8e44ad;
+        }
+
+        #solve-btn {
+            background-color: #2ecc71;
+        }
+
+        #solve-btn:hover {
+            background-color: #27ae60;
+        }
+        
+        #reset-btn {
+            background-color: #BC544B;
+        }
+
+        #reset-btn:hover {
+            background-color: #D0312D;
+        }
+
+        .solution-container {
+            margin-top: 30px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .solution {
+            padding: 20px;
+	    font-size: 18px;
+            background-color: #E6E6FA;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 20px;
+            word-break: break-word;
+	    color: black;
+        }
+
+        .already-solved {
+            background-color: #e8f5e9;
+            color: #1B5E20;
+            font-weight: bold;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+            font-weight: bold;
+        }
+
+        .cube-state {
+            font-family: monospace;
+	    font-size : 15px;
+            padding: 15px;
+            background-color: #B2FFFF;
+            border-radius: 8px;
+            word-break: break-all;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .instructions {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #e3f2fd;
+            border-radius: 8px;
+            width: 100%;
+        }
+
+        .instructions h3 {
+            margin-top: 0;
+            color: #0d47a1;
+        }
+
+        .instructions ol {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .cube {
+                width: 150px;
+                height: 150px;
+            }
+            
+            .face {
+                width: 150px;
+                height: 150px;
+            }
+            
+            .front, .back, .right, .left, .top, .bottom {
+                transform-origin: 75px 75px;
+            }
+            
+            .front { transform: translateZ(75px); }
+            .back { transform: rotateY(180deg) translateZ(75px); }
+            .right { transform: rotateY(90deg) translateZ(75px); }
+            .left { transform: rotateY(-90deg) translateZ(75px); }
+            .top { transform: rotateX(90deg) translateZ(75px); }
+            .bottom { transform: rotateX(-90deg) translateZ(75px); }
+        }
+	.custom-alert {
+  	position: fixed;
+  	top: 20px;
+  	right: 20px;
+  	background-color: #673ab7;
+  	color: white;
+  	padding: 15px 25px;
+  	border-radius: 8px;
+  	box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  	font-weight: bold;
+  	z-index: 9999;
+  	display: none;
+  	animation: fadeIn 0.4s ease;
+	}
+
+.close-btn {
+  margin-left: 15px;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+#mainPatternBtn {
+    background-color: #2980b9;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+#mainPatternBtn:hover {
+    background-color: #3498db;
+}
+
+.dropdown-content {
+    position: absolute;
+    background-color:#444;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
+    border-radius: 6px;
+    z-index: 1;
+    margin-top: 5px;
+    display: flex;
+    flex-direction: column;
+}
+
+.dropdown-content button {
+    background: #444;
+    border: 1px;
+    color: smoke-white;
+    padding: 10px;
+    text-align: left;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.dropdown-content button:hover {
+    background-color: #444;
+}
+
+.hidden {
+    display: none;
+}
+
+.pattern-steps-container {
+    margin-top: 20px;
+    padding: 12px;
+    border: 1px dashed #888;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+}
+
+.pattern-steps {
+    font-family: monospace;
+    color: #333;
+    white-space: pre-wrap;
+}
+
+        
+        footer {
+            text-align: center;
+            padding: 10px;
+            color: black;
+            font-size: 0.9em;
+        }</style>
+</head>
+<body>
+    <div class="container">
+    <h1>3D Rubik's Cube Solver</h1>
+    <p class="subtitle">Interactive solver using the two-phase algorithm</p>
+
+    <div class="controls">
+        <div class="color-palette">
+            <div class="color-option U selected-color" data-color="U" title="White (U)"></div>
+            <div class="color-option R" data-color="R" title="Red (R)"></div>
+            <div class="color-option F" data-color="F" title="Green (F)"></div>
+            <div class="color-option D" data-color="D" title="Yellow (D)"></div>
+            <div class="color-option L" data-color="L" title="Orange (L)"></div>
+            <div class="color-option B" data-color="B" title="Blue (B)"></div>
+        </div>
+
+        <div class="cube-container">
+                <div class="cube">
+		    
+                    <div class="face top" id="U-face">
+                        <div class="sticker U" data-position="U1"></div>
+                        <div class="sticker U" data-position="U2"></div>
+                        <div class="sticker U" data-position="U3"></div>
+                        <div class="sticker U" data-position="U4"></div>
+                        <div class="sticker U" data-position="U5" style="background-color: #FFFFFF;"></div>
+                        <div class="sticker U" data-position="U6"></div>
+                        <div class="sticker U" data-position="U7"></div>
+                        <div class="sticker U" data-position="U8"></div>
+                        <div class="sticker U" data-position="U9"></div>
+                    </div>
+
+                    <div class="face left" id="L-face">
+                        <div class="sticker L" data-position="L1"></div>
+                        <div class="sticker L" data-position="L2"></div>
+                        <div class="sticker L" data-position="L3"></div>
+                        <div class="sticker L" data-position="L4"></div>
+                        <div class="sticker L" data-position="L5" style="background-color: #E65100;"></div>
+                        <div class="sticker L" data-position="L6"></div>
+                        <div class="sticker L" data-position="L7"></div>
+                        <div class="sticker L" data-position="L8"></div>
+                        <div class="sticker L" data-position="L9"></div>
+                    </div>
+
+                    <div class="face front" id="F-face">
+                        <div class="sticker F" data-position="F1"></div>
+                        <div class="sticker F" data-position="F2"></div>
+                        <div class="sticker F" data-position="F3"></div>
+                        <div class="sticker F" data-position="F4"></div>
+                        <div class="sticker F" data-position="F5" style="background-color: #1B5E20"></div>
+                        <div class="sticker F" data-position="F6"></div>
+                        <div class="sticker F" data-position="F7"></div>
+                        <div class="sticker F" data-position="F8"></div>
+                        <div class="sticker F" data-position="F9"></div>
+                    </div>
+
+                    <div class="face right" id="R-face">
+                        <div class="sticker R" data-position="R1"></div>
+                        <div class="sticker R" data-position="R2"></div>
+                        <div class="sticker R" data-position="R3"></div>
+                        <div class="sticker R" data-position="R4"></div>
+                        <div class="sticker R" data-position="R5" style="background-color:  #B71C1C;"></div>
+                        <div class="sticker R" data-position="R6"></div>
+                        <div class="sticker R" data-position="R7"></div>
+                        <div class="sticker R" data-position="R8"></div>
+                        <div class="sticker R" data-position="R9"></div>
+                    </div>
+
+                    <div class="face back" id="B-face">
+                        <div class="sticker B" data-position="B1"></div>
+                        <div class="sticker B" data-position="B2"></div>
+                        <div class="sticker B" data-position="B3"></div>
+                        <div class="sticker B" data-position="B4"></div>
+                        <div class="sticker B" data-position="B5" style="background-color: #0D47A1;"></div>
+                        <div class="sticker B" data-position="B6"></div>
+                        <div class="sticker B" data-position="B7"></div>
+                        <div class="sticker B" data-position="B8"></div>
+                        <div class="sticker B" data-position="B9"></div>
+                    </div>
+                    
+                    <div class="face bottom" id="D-face">
+                        <div class="sticker D" data-position="D1"></div>
+                        <div class="sticker D" data-position="D2"></div>
+                        <div class="sticker D" data-position="D3"></div>
+                        <div class="sticker D" data-position="D4"></div>
+                        <div class="sticker D" data-position="D5" style="background-color: #FFD600;"></div>
+                        <div class="sticker D" data-position="D6"></div>
+                        <div class="sticker D" data-position="D7"></div>
+                        <div class="sticker D" data-position="D8"></div>
+                        <div class="sticker D" data-position="D9"></div>
+                    </div>
+                </div>
+            </div>
+
+
+        <div class="cube-controls" style="text-align: center; margin-top: 20px;">
+            <button id="rotate-up">↑</button>
+            <button id="rotate-left">←</button>
+            <button id="rotate-right">→</button>
+        </div>
+
+        <div class="buttons">
+            <button id="scramble-btn">Scramble</button>
+            <button id="solve-btn">Solve</button>
+            <button id="reset-btn">Reset</button>
+
+            <div>
+                <button id="mainPatternBtn">Patterns ▼</button>
+                <div id="patternDropdown" class="dropdown-content hidden"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="customAlert" class="custom-alert" style="display: none;">
+        <span class="close-btn" onclick="closeAlert()">×</span>
+    </div>
+
+
+    <div id="solutionContainer" class="solution-container" style="display: none;">
+        <h3>Solution:</h3>
+        <div id="solutionText" class="solution"></div>
+    </div>
+
+
+    <div id="patternStepsDiv" class="pattern-steps" style="display: none; text-align: center; background: #FFFACD; padding: 16px; border-radius: 12px; font-size:15px;">
+        <h3>Steps to Create Pattern:</h3>
+        <div id="patternStepsText" style="font-weight: bold;"></div>
+    </div>
+
+
+    <div class="cube-state">
+        <strong>Current Cube State:</strong><br>
+        <span id="cube-state-display">UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB</span>
+    </div>
+
+
+    <div style="margin: 16px auto 0; text-align: center; width: fit-content;">
+        <h4 style="margin: 0 0 4px;">Cube Notations</h4>
+        <img
+            src="https://cdn.shopify.com/s/files/1/0270/0342/0758/files/Notation_for_rubiks_cube_480x480.png?v=1669712518"
+            alt="Rubik's Cube Notation"
+            style="width: 100%; max-width: 400px; display: block; margin: 0 auto; border-radius: 8px;" />
+    </div>
+
+
+    <div class="instructions">
+        <h3>How to Use:</h3>
+        <ol>
+            <li>Select a color from the palette above</li>
+            <li>Click on any sticker to change its color except middle sticker of face</li>
+            <li>Use <strong>Solve</strong> to get the solution for the current cube state</li>
+	    <li>Hold the cube in position as the above cube</li>
+	    <li>Apply the obtained solution steps to solve the cube</li>
+            <li>Use <strong>Scramble</strong> to generate a random cube configuration</li>
+            <li>The solution will appear below the cube (or an error if the cube is invalid)</li>
+        </ol>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const colorOptions = document.querySelectorAll('.color-option');
+    const stickers = document.querySelectorAll('.sticker');
+    const scrambleBtn = document.getElementById('scramble-btn');
+    const solveBtn = document.getElementById('solve-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const cubeStateDisplay = document.getElementById('cube-state-display');
+    const cubeElement = document.querySelector('.cube');
+    const rotateUpBtn = document.getElementById('rotate-up');
+    const rotateLeftBtn = document.getElementById('rotate-left');
+    const rotateRightBtn = document.getElementById('rotate-right');
+    const mainPatternBtn = document.getElementById('mainPatternBtn');
+    const patternDropdown = document.getElementById('patternDropdown');
+    const patternStepsDiv = document.getElementById('patternStepsDiv');
+    const solutionText = document.getElementById('solutionText');
+    const solutionContainer = document.getElementById('solutionContainer');
+    const patternStepsText = document.getElementById('patternStepsText');
+
+    let selectedColor = 'U';
+    let rotateX = -20;
+    let rotateY = -30;
+    const faceOrder = ['U', 'R', 'F', 'D', 'L', 'B'];
+    const stickerOrder = [];
+    const solvedState = 'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB';
+
+    let currentCubeString = "";
+    let patternSteps = "";
+    let isPatternMode = false;
+
+    faceOrder.forEach(face => {
+        for (let i = 1; i <= 9; i++) stickerOrder.push(`${face}${i}`);
+    });
+
+    let cubeState = cubeStateDisplay.textContent || solvedState;
+
+    function updateCubeVisual(state) {
+        for (let i = 0; i < state.length; i++) {
+            const pos = stickerOrder[i];
+            const color = state[i];
+            const sticker = document.querySelector(`.sticker[data-position="${pos}"]`);
+            if (sticker) sticker.className = 'sticker ' + color;
+        }
+        cubeStateDisplay.textContent = state;
+        cubeState = state;
+    }
+
+    function updateCubeState() {
+        const state = [];
+        stickerOrder.forEach(pos => {
+            const sticker = document.querySelector(`.sticker[data-position="${pos}"]`);
+            const colorClass = Array.from(sticker.classList).find(cls => faceOrder.includes(cls));
+            state.push(colorClass || 'U');
+        });
+        cubeState = state.join('');
+        cubeStateDisplay.textContent = cubeState;
+    }
+
+    function resetCube() {
+        cubeState = solvedState;
+        updateCubeVisual(solvedState);
+        rotateX = -20;
+        rotateY = -30;
+        cubeElement.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+
+        solutionContainer.style.display = 'none';
+        solutionText.innerText = '';
+
+        patternStepsDiv.style.display = 'none';
+        patternStepsText.innerText = '';
+
+        patternSteps = "";
+        currentCubeString = "";
+		isPatternMode = false;
+		mainPatternBtn.innerText = 'Patterns ▼';
+    }
+
+    function showCustomAlert(message) {
+        const alertBox = document.getElementById("customAlert");
+        alertBox.innerText = message || "🧊 Cube is already Solved!";
+        alertBox.style.display = "block";
+        setTimeout(closeAlert, 3000);
+    }
+
+    function closeAlert() {
+        document.getElementById("customAlert").style.display = "none";
+    }
+
+    colorOptions.forEach(option => {
+        option.addEventListener('click', function () {
+            colorOptions.forEach(opt => opt.classList.remove('selected-color'));
+            this.classList.add('selected-color');
+            selectedColor = this.dataset.color;
+        });
+    });
+
+    stickers.forEach(sticker => {
+	sticker.addEventListener("mouseover", function() {
+  		if(isPatternMode)
+		{
+			sticker.style.cursor = "not-allowed";
+		}
+		else
+		{
+			sticker.style.cursor = "pointer";
+		}
+		});
+        sticker.addEventListener('click', function () {
+		if(isPatternMode)
+		{
+			showCustomAlert("You cannot change color of cube in pattern mode, click reset!");
+			return;
+		}
+            this.className = 'sticker ' + selectedColor;
+            updateCubeState();
+        });
+    });
+
+    document.addEventListener('keydown', function (e) {
+        switch (e.key) {
+            case 'ArrowUp': rotateX -= 10; break;
+            case 'ArrowDown': rotateX += 10; break;
+            case 'ArrowLeft': rotateY -= 10; break;
+            case 'ArrowRight': rotateY += 10; break;
+            default: return;
+        }
+        cubeElement.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    });
+
+    rotateUpBtn.addEventListener('click', () => {
+        rotateX += 180;
+        cubeElement.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    });
+
+    rotateLeftBtn.addEventListener('click', () => {
+        rotateY -= 90;
+        cubeElement.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    });
+
+    rotateRightBtn.addEventListener('click', () => {
+        rotateY += 90;
+        cubeElement.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    });
+
+    scrambleBtn.addEventListener('click', async function () {
+        try {
+            const response = await fetch('/scramble', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            const newState = data.cubeState;
+            if (newState) {
+				isPatternMode = false;
+                cubeState = newState;
+                updateCubeVisual(cubeState);
+                solutionContainer.style.display = 'none';
+				mainPatternBtn.innerText = 'Patterns ▼';
+            }
+			if(!isPatternMode)
+			{
+				patternStepsDiv.style.display = 'none';
+			}
+			} catch (err) {
+				solutionText.classList.add('error');
+				solutionText.textContent = "Scramble failed: " + err.message;
+				solutionContainer.style.display = 'block';
+			}
+    });
+solveBtn.addEventListener('click', async () => {
+    rotateX = -20;
+    rotateY = -30;
+    cubeElement.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    if (cubeState === solvedState) {
+        showCustomAlert("🧊 Cube is already solved!");
+        return;
+    }
+    solveBtn.disabled = true;
+    solveBtn.style.cursor = 'not-allowed';
+    solveBtn.innerHTML = '<span class="spinner"></span> Solving...';
+
+    try {
+        const response = await fetch('/solve', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                cubeState: currentCubeString || cubeState,
+                patternSteps: patternSteps
+            })
+        });
+        const data = await response.json();
+
+        if (data.error) {
+            solutionText.classList.add('error');
+
+            let errorMessage = data.error;
+            if (errorMessage.includes("Error 1")) {
+                errorMessage = "Error 1: There is not exactly one facelet of each colour.";
+            } else if (errorMessage.includes("Error 2")) {
+                errorMessage = "Error 2: Not all 12 edges exist exactly once.";
+            } else if (errorMessage.includes("Error 3")) {
+                errorMessage = "Error 3: Flip error: One edge has to be flipped.";
+            } else if (errorMessage.includes("Error 4")) {
+                errorMessage = "Error 4: Not all corners exist exactly once.";
+            } else if (errorMessage.includes("Error 5")) {
+                errorMessage = "Error 5: Twist error: One corner has to be twisted.";
+            } else if (errorMessage.includes("Error 6")) {
+                errorMessage = "Error 6: Parity error: Two corners or two edges have to be exchanged.";
+            } else if (errorMessage.includes("Error 7")) {
+                errorMessage = "Error 7: No solution exists for the given maxDepth.";
+            } else if (errorMessage.includes("Error 8")) {
+                errorMessage = "Error 8: Timeout, no solution within given time.";
+            }
+
+            solutionText.textContent = errorMessage;
+        } else {
+            solutionText.classList.remove('error');
+            solutionText.textContent = data.solution;
+        }
+
+        solutionContainer.style.display = 'block';
+
+        if (data.patternSteps && isPatternMode) {
+            patternStepsDiv.style.display = 'block';
+            patternStepsText.innerText = data.patternSteps;
+        } else {
+            patternStepsDiv.style.display = 'none';
+        }
+    } catch (err) {
+        solutionText.classList.add('error');
+        solutionText.textContent = "Solve failed: " + err.message;
+        solutionContainer.style.display = 'block';
+    } finally {
+        solveBtn.disabled = false;
+        solveBtn.style.cursor = 'pointer';
+        solveBtn.innerHTML = 'Solve';
+    }
+});
+
+
+
+    resetBtn.addEventListener('click', resetCube);
+
+    const patterns = [
+        { name: "Pattern 1", cubeString: "FFFFUFFFFDDDDRDDDDLLLLFLLLLBBBBDBBBBUUUULUUUURRRRBRRRR", createSteps: "U D F B R L U2 R2 F2 L2 D2 L2 F2 U' D' B2" },
+        { name: "Pattern 2", cubeString: "RUURUURRRBRRBRRBBBDDDFFDFFDDDLDDLLLLFFFFLLFLLBBUBBUUUU", createSteps: "U' L2 D' R' F R' F R' F D L2 U' R2 B2 U2" },
+        { name: "Pattern 3", cubeString: "RURUUURURFRFRRRFRFUFUFFFUFULDLDDDLDLBLBLLLBLBDBDBBBDBD", createSteps: "R2 L' D F2 R' D' R' L U' D R D B2 R' U D2" },
+        { name: "Pattern 4", cubeString: "UDUDUDUDURLRLRLRLRFBFBFBFBFDUDUDUDUDLRLRLRLRLBFBFBFBFB", createSteps: "U2 D2 R2 L2 F2 B2" },
+        { name: "Pattern 5", cubeString: "UUUUUUUURFRRRRRRRRFFUFFFFFFDDDDDDLDDLLLLLLBLLBBBBBBBBD", createSteps: "U L2 U' B R2 B' U L2 U' B R2 B'" },
+        { name: "Pattern 6", cubeString: "UUUUUFUFFUURURRRRRFRRFFRFFFDDDBDDBBDLLLDLLDDLBBBBBLBLL", createSteps: "F B' U F U F U L B L2 B' U F' L U L' B" },
+        { name: "Pattern 7", cubeString: "RRRRUURUFURFRRFFFFUFRUFFUUULLLDDLBDLBBBLLBDLBDDDDBBDBL", createSteps: "U' L' U' F' R2 B' R F U B2 U B' L U' F U R F'" },
+        { name: "Pattern 8", cubeString: "DDDDUUDUURRFRRFRRFRFFRFFRFFUDDUDDUUUBBBLLBBBBLLLLBBLLL", createSteps: "L2 B2 D' B2 D L2 U R2 D R2 B U R' F2 R U' B' U'" }
+    ];
+
+  mainPatternBtn.addEventListener('click', () => {
+    patternDropdown.classList.toggle('hidden');
+});
+
+patterns.forEach(pattern => {
+    const btn = document.createElement('button');
+    btn.innerText = pattern.name;
+    btn.type = 'button';
+    btn.className = 'pattern-btn';
+
+    btn.addEventListener('click', () => {
+        currentCubeString = pattern.cubeString;
+        patternSteps = pattern.createSteps;
+        updateCubeVisual(currentCubeString);
+        patternStepsDiv.style.display = 'block';
+        patternStepsDiv.innerHTML = `<strong>Steps to create pattern:</strong><br>${patternSteps}`;
+        patternDropdown.classList.add('hidden');
+        isPatternMode = true;
+        mainPatternBtn.innerText = pattern.name;
+
+        if (solutionContainer) {
+            solutionContainer.style.display = 'none';
+        }
+    });
+
+    // Append the button to the dropdown (assuming you have a container for it)
+    patternDropdown.appendChild(btn);
+});
+
+
+    updateCubeVisual(cubeState);
+});
+</script>
+    <footer>
+        <p>&copy; 2025 Chandrashekar's Rubiks Cube Solver. All rights reserved.</p>
+    </footer>
+</body>
+</html>
